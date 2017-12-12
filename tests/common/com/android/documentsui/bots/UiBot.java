@@ -143,6 +143,14 @@ public class UiBot extends Bots.BaseBot {
         }
     }
 
+    public void clickActionItem(String label) throws UiObjectNotFoundException {
+        if (!waitForActionModeBarToAppear()) {
+            throw new UiObjectNotFoundException("ActionMode bar not found");
+        }
+        clickActionbarOverflowItem(label);
+        mDevice.waitForIdle();
+    }
+
     public void switchToGridMode() {
         final UiObject2 gridMode = menuGridMode();
         if (gridMode != null) {
@@ -229,7 +237,7 @@ public class UiBot extends Bots.BaseBot {
         onView(withId(android.R.id.button2)).perform(click());
     }
 
-    UiObject findMenuLabelWithName(String label) {
+    public UiObject findMenuLabelWithName(String label) {
         UiSelector selector = new UiSelector().text(label);
         return mDevice.findObject(selector);
     }
