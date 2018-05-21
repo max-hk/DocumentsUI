@@ -210,7 +210,7 @@ public class ProvidersCache implements ProvidersAccess {
         final ContentResolver resolver = mContext.getContentResolver();
         synchronized (mLock) {
             for (String authority : mStoppedAuthorities) {
-                mRoots.putAll(authority, loadRootsForAuthority(resolver, authority, true));
+                mRoots.replaceValues(authority, loadRootsForAuthority(resolver, authority, true));
             }
             mStoppedAuthorities.clear();
         }
@@ -227,7 +227,7 @@ public class ProvidersCache implements ProvidersAccess {
                 return;
             }
             if (DEBUG) Log.d(TAG, "Loading stopped authority " + authority);
-            mRoots.putAll(authority, loadRootsForAuthority(resolver, authority, true));
+            mRoots.replaceValues(authority, loadRootsForAuthority(resolver, authority, true));
             mStoppedAuthorities.remove(authority);
         }
     }
@@ -240,10 +240,27 @@ public class ProvidersCache implements ProvidersAccess {
             ContentResolver resolver, String authority, boolean forceRefresh) {
         if (VERBOSE) Log.v(TAG, "Loading roots for " + authority);
 
+        final ArrayList<RootInfo> roots = new ArrayList<>();
+        ProviderInfo provider = mContext.getPackageManager().resolveContentProvider(
+                authority, PackageManager.GET_META_DATA);
+        if (!provider.exported) {
+            Log.w(TAG, "Provider is not exported. Failed to load roots for " + authority);
+            return roots;
+        }
+        if (!provider.grantUriPermissions) {
+            Log.w(TAG, "Provider doesn't grantUriPermissions. Failed to load roots for "
+                    + authority);
+            return roots;
+        }
+        if (!android.Manifest.permission.MANAGE_DOCUMENTS.equals(provider.readPermission)
+                || !android.Manifest.permission.MANAGE_DOCUMENTS.equals(provider.writePermission)) {
+            Log.w(TAG, "Provider is not protected by MANAGE_DOCUMENTS. Failed to load roots for "
+                    + authority);
+            return roots;
+        }
+
         synchronized (mObservedAuthoritiesDetails) {
             if (!mObservedAuthoritiesDetails.containsKey(authority)) {
-                ProviderInfo provider = mContext.getPackageManager().resolveContentProvider(
-                        authority, PackageManager.GET_META_DATA);
                 PackageManager pm = mContext.getPackageManager();
                 CharSequence appName = pm.getApplicationLabel(provider.applicationInfo);
                 String packageName = provider.applicationInfo.packageName;
@@ -274,7 +291,6 @@ public class ProvidersCache implements ProvidersAccess {
             }
         }
 
-        final ArrayList<RootInfo> roots = new ArrayList<>();
         ContentProviderClient client = null;
         Cursor cursor = null;
         try {
@@ -318,7 +334,7 @@ public class ProvidersCache implements ProvidersAccess {
         synchronized (mLock) {
             RootInfo root = forceRefresh ? null : getRootLocked(authority, rootId);
             if (root == null) {
-                mRoots.putAll(authority, loadRootsForAuthority(
+                mRoots.replaceValues(authority, loadRootsForAuthority(
                                 mContext.getContentResolver(), authority, forceRefresh));
                 root = getRootLocked(authority, rootId);
             }
