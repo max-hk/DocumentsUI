@@ -358,6 +358,7 @@ public abstract class AbstractActionHandler<T extends FragmentActivity & CommonA
         if (mSearchMgr.isSearching()) {
             loadDocument(
                     doc.derivedUri,
+                    doc.userId,
                     (@Nullable DocumentStack stack) -> openFolderInSearchResult(stack, doc));
         } else {
             openChildContainer(doc);
@@ -581,7 +582,7 @@ public abstract class AbstractActionHandler<T extends FragmentActivity & CommonA
             if (top.isArchive()) {
                 // Swap the zip file in original provider and the one provided by ArchiveProvider.
                 stack.pop();
-                stack.push(mDocs.getArchiveDocument(top.derivedUri));
+                stack.push(mDocs.getArchiveDocument(top.derivedUri, top.userId));
             }
 
             mState.stack.reset();
@@ -609,7 +610,7 @@ public abstract class AbstractActionHandler<T extends FragmentActivity & CommonA
             currentDoc = doc;
         } else if (doc.isArchive()) {
             // Archive.
-            currentDoc = mDocs.getArchiveDocument(doc.derivedUri);
+            currentDoc = mDocs.getArchiveDocument(doc.derivedUri, doc.userId);
         }
 
         assert(currentDoc != null);
@@ -699,11 +700,12 @@ public abstract class AbstractActionHandler<T extends FragmentActivity & CommonA
         throw new UnsupportedOperationException("Share not supported!");
     }
 
-    protected final void loadDocument(Uri uri, LoadDocStackCallback callback) {
+    protected final void loadDocument(Uri uri, UserId userId, LoadDocStackCallback callback) {
         new LoadDocStackTask(
                 mActivity,
                 mProviders,
                 mDocs,
+                userId,
                 callback
                 ).executeOnExecutor(mExecutors.lookup(uri.getAuthority()), uri);
     }
@@ -739,7 +741,7 @@ public abstract class AbstractActionHandler<T extends FragmentActivity & CommonA
     protected final boolean launchToDocument(Uri uri) {
         // We don't support launching to a document in an archive.
         if (!Providers.isArchiveUri(uri)) {
-            loadDocument(uri, this::onStackLoaded);
+            loadDocument(uri, UserId.DEFAULT_USER, this::onStackLoaded);
             return true;
         }
 
@@ -801,7 +803,7 @@ public abstract class AbstractActionHandler<T extends FragmentActivity & CommonA
     }
 
     protected final void loadRecent() {
-        mState.stack.changeRoot(mProviders.getRecentsRoot());
+        mState.stack.changeRoot(mProviders.getRecentsRoot(UserId.DEFAULT_USER));
         mActivity.refreshCurrentRootAndDirectory(AnimationView.ANIM_NONE);
     }
 
@@ -844,12 +846,13 @@ public abstract class AbstractActionHandler<T extends FragmentActivity & CommonA
                     if (DEBUG) {
                         Log.d(TAG, "Creating new loader recents.");
                     }
-                    loader =  new RecentsLoader(
+                    loader = new RecentsLoader(
                             context,
                             mProviders,
                             mState,
                             mExecutors,
-                            mInjector.fileTypeLookup);
+                            mInjector.fileTypeLookup,
+                            mState.stack.getRoot().userId);
                 }
                 loader.setObserver(observer);
                 return loader;

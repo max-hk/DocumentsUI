@@ -220,10 +220,7 @@ public class RootInfo implements Durable, Parcelable, Comparable<RootInfo> {
     private void deriveFields() {
         derivedMimeTypes = (mimeTypes != null) ? mimeTypes.split("\n") : null;
 
-        if (isExternalStorageHome()) {
-            derivedType = TYPE_LOCAL;
-            derivedIcon = LOAD_FROM_CONTENT_RESOLVER;
-        } else if (isMtp()) {
+        if (isMtp()) {
             derivedType = TYPE_MTP;
             derivedIcon = R.drawable.ic_usb_storage;
         } else if (isUsb()) {
@@ -275,16 +272,6 @@ public class RootInfo implements Durable, Parcelable, Comparable<RootInfo> {
 
     public boolean isRecents() {
         return authority == null && rootId == null;
-    }
-
-    /*
-     * Return true, if the root is from ExternalStorage and the id is home. Otherwise, return false.
-     */
-    public boolean isExternalStorageHome() {
-        // Note that "home" is the expected root id for the auto-created
-        // user home directory on external storage. The "home" value should
-        // match ExternalStorageProvider.ROOT_ID_HOME.
-        return isExternalStorage() && "home".equals(rootId);
     }
 
     public boolean isExternalStorage() {
@@ -340,6 +327,10 @@ public class RootInfo implements Durable, Parcelable, Comparable<RootInfo> {
                 || derivedType == TYPE_SD;
     }
 
+    public boolean isPhoneStorage() {
+        return derivedType == TYPE_LOCAL;
+    }
+
     public boolean hasSettings() {
         return (flags & Root.FLAG_HAS_SETTINGS) != 0;
     }
@@ -388,12 +379,14 @@ public class RootInfo implements Durable, Parcelable, Comparable<RootInfo> {
         return (flags & Root.FLAG_REMOVABLE_USB) != 0;
     }
 
+    /**
+     * Returns true if this root supports cross profile.
+     */
+    public boolean supportsCrossProfile() {
+        return isLibrary() || isDownloads() || isPhoneStorage();
+    }
+
     private Drawable loadMimeTypeIcon(Context context) {
-
-        if (isExternalStorageHome()) {
-            return IconUtils.loadMimeIcon(context, DocumentsContract.Document.MIME_TYPE_DIR);
-        }
-
         switch (derivedType) {
             case TYPE_IMAGES:
                 return IconUtils.loadMimeIcon(context, MimeTypes.IMAGE_MIME);

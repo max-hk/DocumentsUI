@@ -21,10 +21,13 @@ import static androidx.core.util.Preconditions.checkNotNull;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Process;
 import android.os.UserHandle;
+import android.os.UserManager;
 
 import androidx.annotation.VisibleForTesting;
+import androidx.loader.content.CursorLoader;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -37,12 +40,12 @@ import java.util.Objects;
 public final class UserId {
 
     // A unspecified user is used as when the user's value is uninitialized. e.g. rootInfo.reset()
-    public static UserId UNSPECIFIED_USER = UserId.of(UserHandle.of(-1000));
+    public static final UserId UNSPECIFIED_USER = UserId.of(UserHandle.of(-1000));
     // A current user represents the user of the app's process. It is mainly used for comparison.
-    public static UserId CURRENT_USER = UserId.of(Process.myUserHandle());
+    public static final UserId CURRENT_USER = UserId.of(Process.myUserHandle());
     // A default user represents the user of the app's process. It is mainly used for operation
     // which supports only the current user only.
-    public static UserId DEFAULT_USER = CURRENT_USER;
+    public static final UserId DEFAULT_USER = CURRENT_USER;
 
     private static final int VERSION_INIT = 1;
 
@@ -56,9 +59,17 @@ public final class UserId {
     /**
      * Returns a {@link UserId} for a given {@link UserHandle}.
      */
-    @VisibleForTesting
-    static UserId of(UserHandle userHandle) {
+    public static UserId of(UserHandle userHandle) {
         return new UserId(userHandle);
+    }
+
+    /**
+     * Returns a {@link UserId} for the given user id identifier.
+     *
+     * @see UserHandle#getIdentifier
+     */
+    public static UserId of(int userIdentifier) {
+        return of(UserHandle.of(userIdentifier));
     }
 
     /**
@@ -93,15 +104,35 @@ public final class UserId {
         return asContext(context).getContentResolver();
     }
 
+    /**
+     * Returns true if this user refers to the system user; false otherwise.
+     */
+    public boolean isSystem() {
+        return mUserHandle.isSystem();
+    }
+
+    /**
+     * Returns true if the this user is a managed profile.
+     */
+    public boolean isManagedProfile(UserManager userManager) {
+        return userManager.isManagedProfile(mUserHandle.getIdentifier());
+    }
+
+    /**
+     * Returns an identifier stored in this user id. This can be used to recreate the {@link UserId}
+     * by {@link UserId#of(int)}.
+     */
+    public int getIdentifier() {
+        return mUserHandle.getIdentifier();
+    }
+
     private boolean isUnspecified() {
         return UNSPECIFIED_USER.equals(this);
     }
 
     @Override
     public String toString() {
-        return "UserId{"
-                + (isUnspecified() ? "UNSPECIFIED" : mUserHandle.getIdentifier())
-                + "}";
+        return isUnspecified() ? "UNSPECIFIED" : String.valueOf(mUserHandle.getIdentifier());
     }
 
     @Override
@@ -147,5 +178,12 @@ public final class UserId {
     public static void write(DataOutputStream out, UserId userId) throws IOException {
         out.writeInt(VERSION_INIT);
         out.writeInt(userId.mUserHandle.getIdentifier());
+    }
+
+    /**
+     * Create a cursor loader of the user for the given uri.
+     */
+    public static CursorLoader createCursorLoader(Context context, Uri uri, UserId userId) {
+        return new CursorLoader(userId.asContext(context), uri, null, null, null, null);
     }
 }
