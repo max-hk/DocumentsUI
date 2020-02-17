@@ -23,6 +23,8 @@ import static com.android.documentsui.base.State.ACTION_OPEN_TREE;
 import static com.android.documentsui.base.State.ACTION_PICK_COPY_DESTINATION;
 
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.net.Uri;
@@ -46,6 +48,7 @@ import com.android.documentsui.FocusManager;
 import com.android.documentsui.Injector;
 import com.android.documentsui.MenuManager.DirectoryDetails;
 import com.android.documentsui.Metrics;
+import com.android.documentsui.ProfileTabsController;
 import com.android.documentsui.ProviderExecutor;
 import com.android.documentsui.R;
 import com.android.documentsui.SharedInputHandler;
@@ -120,6 +123,10 @@ public class PickActivity extends BaseActivity implements ActionHandler.Addons {
                 mInjector.selectionMgr,
                 mInjector.menuManager,
                 mInjector.messages);
+
+        mInjector.profileTabsController = new ProfileTabsController(
+                mInjector.selectionMgr,
+                getProfileTabsAddon());
 
         mInjector.pickResult = getPickResult(icicle);
         mInjector.actions = new ActionHandler<>(
@@ -206,6 +213,14 @@ public class PickActivity extends BaseActivity implements ActionHandler.Addons {
             final Intent moreApps = new Intent(intent);
             moreApps.setComponent(null);
             moreApps.setPackage(null);
+            for (ResolveInfo info : getPackageManager().queryIntentActivities(moreApps,
+                    PackageManager.MATCH_DEFAULT_ONLY)) {
+                if (RootsFragment.PROFILE_TARGET_ACTIVITY.equals(
+                        info.activityInfo.targetActivity)) {
+                    mState.canShareAcrossProfile = true;
+                    break;
+                }
+            }
             RootsFragment.show(getSupportFragmentManager(), moreApps);
         } else if (mState.action == ACTION_OPEN ||
                    mState.action == ACTION_CREATE ||
@@ -361,7 +376,7 @@ public class PickActivity extends BaseActivity implements ActionHandler.Addons {
             mSearchManager.recordHistory();
         } else if (mState.action == ACTION_OPEN || mState.action == ACTION_GET_CONTENT) {
             // Explicit file picked, return
-            mInjector.actions.finishPicking(doc.derivedUri);
+            mInjector.actions.finishPicking(doc.getDocumentUri());
             mSearchManager.recordHistory();
         } else if (mState.action == ACTION_CREATE) {
             // Replace selected file
@@ -375,7 +390,7 @@ public class PickActivity extends BaseActivity implements ActionHandler.Addons {
             final int size = docs.size();
             final Uri[] uris = new Uri[size];
             for (int i = 0; i < size; i++) {
-                uris[i] = docs.get(i).derivedUri;
+                uris[i] = docs.get(i).getDocumentUri();
             }
             mInjector.actions.finishPicking(uris);
             mSearchManager.recordHistory();
