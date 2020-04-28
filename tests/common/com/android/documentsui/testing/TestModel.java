@@ -27,7 +27,7 @@ import com.android.documentsui.base.DocumentInfo;
 import com.android.documentsui.base.Features;
 import com.android.documentsui.roots.RootCursorWrapper;
 
-import libcore.content.type.MimeMap;
+import libcore.net.MimeUtils;
 
 import java.util.Random;
 
@@ -130,7 +130,7 @@ public class TestModel extends Model {
 
         while(i != -1) {
             name = name.substring(i + 1);
-            String type = MimeMap.getDefault().guessMimeTypeFromExtension(name);
+            String type = MimeUtils.guessMimeTypeFromExtension(name);
             if (type != null) {
                 return type;
             }
