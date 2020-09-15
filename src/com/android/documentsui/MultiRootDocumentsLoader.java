@@ -104,8 +104,6 @@ public abstract class MultiRootDocumentsLoader extends AsyncTaskLoader<Directory
      * @param state current state
      * @param executors the executors of authorities
      * @param fileTypeMap the map of mime types and file types.
-     * @param lock the selection lock
-     * @param contentChangedCallback callback when content changed
      */
     public MultiRootDocumentsLoader(Context context, ProvidersAccess providers, State state,
             Lookup<String, Executor> executors, Lookup<String, String> fileTypeMap) {
@@ -181,17 +179,18 @@ public abstract class MultiRootDocumentsLoader extends AsyncTaskLoader<Directory
                             continue;
                         }
 
-                        // Filter hidden files.
-                        cursor = new FilteringCursorWrapper(cursor, mState.showHiddenFiles);
-
-                        final FilteringCursorWrapper filtered = new FilteringCursorWrapper(
-                                cursor, mState.acceptMimes, getRejectMimes(), rejectBefore) {
+                        final FilteringCursorWrapper filteredCursor =
+                                new FilteringCursorWrapper(cursor) {
                             @Override
                             public void close() {
                                 // Ignored, since we manage cursor lifecycle internally
                             }
                         };
-                        cursors.add(filtered);
+                        filteredCursor.filterHiddenFiles(mState.showHiddenFiles);
+                        filteredCursor.filterMimes(mState.acceptMimes, getRejectMimes());
+                        filteredCursor.filterLastModified(rejectBefore);
+
+                        cursors.add(filteredCursor);
                     }
 
                 } catch (InterruptedException e) {
@@ -303,10 +302,11 @@ public abstract class MultiRootDocumentsLoader extends AsyncTaskLoader<Directory
 
     @Override
     protected void onStartLoading() {
-        if (mResult != null) {
+        boolean isCursorStale = checkIfCursorStale(mResult);
+        if (mResult != null && !isCursorStale) {
             deliverResult(mResult);
         }
-        if (takeContentChanged() || mResult == null) {
+        if (takeContentChanged() || mResult == null || isCursorStale) {
             forceLoad();
         }
     }
@@ -455,5 +455,23 @@ public abstract class MultiRootDocumentsLoader extends AsyncTaskLoader<Directory
 
             mIsClosed = true;
         }
+    }
+
+    private boolean checkIfCursorStale(DirectoryResult result) {
+        if (result == null || result.cursor == null || result.cursor.isClosed()) {
+            return true;
+        }
+        Cursor cursor = result.cursor;
+        try {
+            cursor.moveToPosition(-1);
+            for (int pos = 0; pos < cursor.getCount(); ++pos) {
+                if (!cursor.moveToNext()) {
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            return true;
+        }
+        return false;
     }
 }
