@@ -93,7 +93,7 @@
     <string name="root_type_device" msgid="1713604128005476585">"Zariadenia"</string>
     <string name="root_type_apps" msgid="8646073235029886342">"Ďalšie aplikácie"</string>
     <string name="empty" msgid="5300254272613103004">"Žiadne položky"</string>
-    <string name="no_results" msgid="2371026325236359209">"Žiadne zhody – %1$s"</string>
+    <string name="no_results" msgid="2371026325236359209">"V priečinku %1$s sa nič nenašlo"</string>
     <string name="toast_no_application" msgid="7555319548595113121">"Súbor nie je možné otvoriť"</string>
     <string name="toast_view_in_archives_unsupported" msgid="1923221390170964845">"Súbory sa nedajú otvoriť v archívoch"</string>
     <string name="toast_failed_delete" msgid="3453846588205817591">"Niektoré dokumenty sa nepodarilo odstrániť"</string>
@@ -271,7 +271,7 @@
     <string name="root_info_header_media" msgid="2774453755906260852">"<xliff:g id="LABEL">%1$s</xliff:g> v telefóne"</string>
     <string name="root_info_header_storage" msgid="2989014130584927442">"Súbory v zariadení <xliff:g id="DEVICE">%1$s</xliff:g>"</string>
     <string name="root_info_header_app" msgid="2125422047558420885">"Súbory zo služby <xliff:g id="LABEL">%1$s</xliff:g>"</string>
-    <string name="root_info_header_app_with_summary" msgid="3223302581236069702">"Súbory z: <xliff:g id="LABEL">%1$s</xliff:g> / <xliff:g id="SUMMARY">%2$s</xliff:g>"</string>
+    <string name="root_info_header_app_with_summary" msgid="3223302581236069702">"Súbory zo služby <xliff:g id="LABEL">%1$s</xliff:g> / <xliff:g id="SUMMARY">%2$s</xliff:g>"</string>
     <string name="root_info_header_image_recent" msgid="6252335619444758201">"Nedávne obrázky v telefóne"</string>
     <string name="root_info_header_image_global_search" msgid="7945533325610533016">"Obrázky v telefóne"</string>
     <string name="root_info_header_image_storage" msgid="5086740886360075930">"Obrázky v zariadení <xliff:g id="DEVICE">%1$s</xliff:g>"</string>
